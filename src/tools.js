@@ -17,6 +17,7 @@ export function transposeMatrix(matrix) {
 }
 
 export let R = (a=1) =>  fxrand()*a
+export let Rz = (a=1) =>  a*(R(2)-1)
 export let RP = () => {
   let p = new Point(R(2)-1, R(2)-1, R(2)-1)
   return divP(p, norm2dP(p))
@@ -105,6 +106,12 @@ export let Point = function(x, y, z) {
     this.x = x
     this.y = y
     this.z = z
+    this.clone = function() {
+      return new Point(this.x, this.y, this.z)
+    }
+    this.clone_noisy = function(n) {
+      return new Point(this.x+Rz(n), this.y+Rz(n), this.z+Rz(n))
+    }
     this.getVect = function(i) {
       if (i==2) {
         return [this.x, this.y]
@@ -304,4 +311,68 @@ export let addP = function(p1, p2) {
 }
 export function norm2dP(vector) {
   return Math.sqrt(vector.x**2 + vector.y**2)
+}
+
+// Perlin noise map
+export function Perlin(nbNodes, size, nbLevels) {
+  this.nbLevels = nbLevels
+  this.nbNodes = nbNodes
+  this.size = size
+  this.rand_vect = function(){
+      let theta = Math.random() * 2 * Math.PI;
+      return {x: Math.cos(theta), y: Math.sin(theta)};
+  }
+  this.dot_prod_grid = function(x, y, vx, vy){
+      let g_vect;
+      let d_vect = {x: x - vx, y: y - vy};
+      if (this.gradients[[vx,vy]]){
+          g_vect = this.gradients[[vx,vy]];
+      } else {
+          g_vect = this.rand_vect();
+          this.gradients[[vx, vy]] = g_vect;
+      }
+      return d_vect.x * g_vect.x + d_vect.y * g_vect.y;
+  }
+  this.smootherstep = function(x){
+      return 6*x**5 - 15*x**4 + 10*x**3;
+  }
+  this.interp = function(x, a, b){
+      return a + this.smootherstep(x) * (b-a);
+  }
+
+  this.gradients = {};
+  this.memory = {};
+
+  this.get = function(x, y, ti) {
+    // create strates of noise
+    let v = 0
+    for (let l=1; l<this.nbLevels+1; l++) {
+      // if (l==this.nbLevels) {
+      //   v = v + this.getLevel(x, y, ti, l)*(1/l)
+      // } else {
+      v = v + this.getLevel(x, y, ti, l)*(1/(l+1))
+      // }
+    }
+    return v
+  }
+
+  this.getLevel = function(x, y, ti, level) {
+
+    x = this.nbNodes*level* (x+level*this.size)/(this.size) + ti/10000
+    y = this.nbNodes*level* (y+level*this.size)/(this.size) + ti/10000
+    if (this.memory.hasOwnProperty([x,y]))
+        return this.memory[[x,y]];
+    let xf = Math.floor(x);
+    let yf = Math.floor(y);
+    //interpolate
+    let tl = this.dot_prod_grid(x, y, xf,   yf);
+    let tr = this.dot_prod_grid(x, y, xf+1, yf);
+    let bl = this.dot_prod_grid(x, y, xf,   yf+1);
+    let br = this.dot_prod_grid(x, y, xf+1, yf+1);
+    let xt = this.interp(x-xf, tl, tr);
+    let xb = this.interp(x-xf, bl, br);
+    let v = this.interp(y-yf, xt, xb);
+    this.memory[[x,y]] = v;
+    return v;
+  }
 }
