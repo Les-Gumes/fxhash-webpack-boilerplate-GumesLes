@@ -106,6 +106,8 @@ export let Point = function(x, y, z) {
     this.x = x
     this.y = y
     this.z = z
+
+    //  Get functions
     this.clone = function() {
       return new Point(this.x, this.y, this.z)
     }
@@ -119,6 +121,8 @@ export let Point = function(x, y, z) {
         return [this.x, this.y, this.z]
       }
     }
+
+    // Algebra
     this.mult = function(mulVal) {
       this.x = this.x * mulVal
       this.y = this.y * mulVal
@@ -132,11 +136,12 @@ export let Point = function(x, y, z) {
       this.y = this.y / divVal
       this.z = this.z / divVal
     }
+
+    // Norms
     this.norm = function() {
       this.norm = Math.sqrt(this.x**2 + this.y**2)
       this.x = this.x / this.norm
       this.y = this.y / this.norm
-
     }
     this.norm3 = function() {
       this.norm = Math.sqrt(this.x**2 + this.y**2 + this.z**2)
